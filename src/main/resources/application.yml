@@ -1,0 +1,12 @@
+wechat:
+   #appId: wx30543d0799b09591
+   #appSecret: 4901bcd265017d4e21e2b263d362f57d
+  appId: wx37c7ae1fd10ac76b
+  appSecret: 0c1f5b7c880975df4a93abb987791f7d
+  domin: http://parapeng.xiaomiqiu.com/
+  savePath: F:\imgdown\
+server:
+  port: 8080
+mvc:
+  view:
+    suffix: .html
