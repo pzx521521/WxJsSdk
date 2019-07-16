@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+	</head>
+	<body>
+		<div onclick="takePicture()">点击上传 </div>
+		<img class="hiddenImg"></img>
+		<img class="myimg"></img>
+		
+	</body>
+	<script src="https://cdn.bootcss.com/zepto/1.0rc1/zepto.min.js"></script>
+	<script src="http://res.wx.qq.com/open/js/jweixin-1.4.0.js"></script>
+	<script>
+	$(document).ready(function () {
+		//获取配置信息
+		$.ajax({
+			url : "http://parapeng.xiaomiqiu.com/wechat/getConfig",
+			type : 'post',
+			dataType : 'json',
+			contentType : "application/x-www-form-urlencoded; charset=utf-8",
+			data : {
+				'url' : location.href.split('#')[0]
+			},
+			success : function(data) {
+				console.log(data);
+				wx.config({
+					debug : false,
+					appId : data.appId, 
+					timestamp : data.timestamp,
+					nonceStr : data.nonceStr,
+					signature : data.signature,
+					jsApiList : ['chooseImage','uploadImage','getLocalImgData','downloadImage'],
+					success:function(){
+						alert("配置成功")
+					},
+					fail:function(){
+						alert("配置失败")
+					}		
+				});
+			},
+			error: function (xhr, type) {
+				showAlert("getJSSDKSignature出错");
+			},
+		});
+		checkUserDeposit();
+	});
+	function checkUserDeposit() {
+		wx.ready(function () {
+			// 在这里调用 API
+			wx.checkJsApi({
+			  jsApiList: [
+				'chooseImage',
+				'uploadImage',
+				'getLocalImgData',
+				'downloadImage'
+			  ],
+			  success: function (res) {
+				console.log(JSON.stringify(res));
+			  }
+			});
+		});
+	}
+
+	function takePicture() {  
+	   wx.chooseImage({  
+		   count: 1,  
+		   needResult: 1,  
+		   sizeType: ['original', 'compressed'], // 可以指定是原图还是压缩图，默认二者都有  
+		   sourceType: ['album', 'camera'], // 可以指定来源是相册还是相机，默认二者都有  
+		   success: function (data) {                  
+			   localIds = data.localIds[0];   // 返回选定照片的本地ID列表，localId可以作为img标签的src属性显示图片                           
+			   wxuploadImage(localIds);
+			   wxgetLocalImgData(localIds);
+		   },  
+		   fail: function (res) {            
+			   alterShowMessage("操作提示", JSON.stringify(res), "1", "确定", "", "", "");  
+		   }    
+	   });  
+	}  
+
+	//上传到微信服务器
+	function wxuploadImage(e) {
+		var $hiddenImg= $(".hiddenImg");
+		wx.uploadImage({  
+			localId: e, // 需要上传的图片的本地ID，由chooseImage接口获得  
+			isShowProgressTips: 1, // 默认为1，显示进度提示  
+			success: function (res) {                                        
+				mediaId = res.serverId;                    
+				tijiao()
+				$hiddenImg.val(mediaId);          
+			},  
+			fail: function (error) {  
+				picPath = '';  
+				localIds = '';  
+				alert(Json.stringify(error));          
+			}          
+		});  
+	}  
+	//获取本地图片接口，在本地显示
+	function wxgetLocalImgData(e){
+		var $myimg = $(".myimg");    
+		if(window.__wxjs_is_wkwebview){
+		 wx.getLocalImgData({
+			 localId: e, // 图片的localID
+			 success: function (res) {                    
+				  var localData = res.localData; // localData是图片的base64数据，可以用img标签显示
+				  localData = localData.replace('jgp', 'jpeg');//iOS 系统里面得到的数据，类型为 image/jgp,因此需要替换一下    
+				  $myimg.attr("src", localData);
+			 },fail:function(res){
+			  alert("显示失败");
+			 }
+		 });
+		}else{
+			$myimg.attr("src", e);
+			
+		}
+	}
+	//提交到本地服务器，实现本地上传
+	function tijiao(){
+		var imgid = $(".hiddenImg").val();
+   
+		 $.ajax({
+				url:'wechat/uploadPic',
+				data:{
+					  "imgid":imgid,
+				},
+				type:'post',
+				dataType : 'json',
+				async:false,
+				success:function(res){
+					alert("上传成功:" + res);
+				},
+				error:function(xhr, type){
+					alert("上传失败");
+				}
+			})        
+	}
+	wx.error(function (res) {
+		showAlert("微信接口出错");
+	});
+	</script>	
+</html>
